@@ -1,0 +1,128 @@
+﻿using CrudMySql.Models;
+using CrudMySql.Repositorio;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.Linq;
+
+namespace CrudMySql.Aplicacao
+{
+    public class PessoaAplicacao
+    {
+        private readonly Context contexto;
+        SqlCommand cmd = null;
+
+        public PessoaAplicacao()
+        {
+            contexto = new Context();
+        }
+
+        public List<Pessoa> ListarTodos()
+        {
+            var pessoas = new List<Pessoa>();
+            const string strQuery = "SELECT Id, Nome FROM Pessoa";
+
+            var rows = contexto.ExecutaComandoComRetorno(strQuery);
+            foreach (var row in rows)
+            {
+                var tempPessoa = new Pessoa
+                {
+                    Id = int.Parse(!string.IsNullOrEmpty(row["Id"]) ? row["Id"] : "0"),
+                    Nome = row["Nome"]
+                };
+                pessoas.Add(tempPessoa);
+            }
+
+            return pessoas;
+        }
+        //public List<Pessoa> ListarTodos(string busca)
+        //{
+        //    var pessoas = new List<Pessoa>();
+        //    const string strQuery = "SELECT Id, Nome FROM Pessoa WHERE Nome LIKE @criterio";
+        //    cmd = new SqlCommand(strQuery);
+        //    cmd.Parameters.Add("@criterio", SqlDbType.VarChar).Value = busca;
+        //    //cmd.Parameters["@criterio"].Value = busca.ToString() + "%";
+            
+        //    var rows = contexto.ExecutaComandoComRetorno(strQuery, cmd);            
+        //    foreach (var row in rows)
+        //    {
+        //        var tempPessoa = new Pessoa
+        //        {
+        //            Id = int.Parse(!string.IsNullOrEmpty(row["Id"]) ? row["Id"] : "0"),
+        //            Nome = row["Nome"]
+        //        };
+        //        pessoas.Add(tempPessoa);
+        //        //pessoas.Where(x => x.Nome.Contains(busca));
+        //    }
+        //    return pessoas;
+        //}
+
+        private int Inserir(Pessoa pessoa)
+        {
+            const string commandText = " INSERT INTO Pessoa (Nome) VALUES (@Nome) ";
+
+            var parameters = new Dictionary<string, object>
+            {
+                {"Nome", pessoa.Nome}
+            };
+
+            return contexto.ExecutaComando(commandText, parameters);
+        }
+
+        private int Alterar(Pessoa pessoa)
+        {
+            var commandText = " UPDATE Pessoa SET ";
+            commandText += " Nome = @Nome ";
+            commandText += " WHERE Id = @Id ";
+
+            var parameters = new Dictionary<string, object>
+            {
+                {"Id", pessoa.Id},
+                {"Nome", pessoa.Nome}
+            };
+
+            return contexto.ExecutaComando(commandText, parameters);
+        }
+
+        public void Salvar(Pessoa pessoa)
+        {
+            if (pessoa.Id > 0)
+                Alterar(pessoa);
+            else
+                Inserir(pessoa);
+        }
+
+        public int Excluir(int id)
+        {
+            const string strQuery = "DELETE FROM Pessoa WHERE Id = @Id";
+            var parametros = new Dictionary<string, object>
+            {
+                {"Id", id}
+            };
+
+            return contexto.ExecutaComando(strQuery, parametros);
+        }
+
+        public Pessoa ListarPorId(int id)
+        {
+            var pessoas = new List<Pessoa>();
+            const string strQuery = "SELECT Id, Nome FROM Pessoa WHERE Id = @Id";
+            var parametros = new Dictionary<string, object>
+            {
+                {"Id", id}
+            };
+            var rows = contexto.ExecutaComandoComRetorno(strQuery, parametros);
+            foreach (var row in rows)
+            {
+                var tempPessoa = new Pessoa
+                {
+                    Id = int.Parse(!string.IsNullOrEmpty(row["Id"]) ? row["Id"] : "0"),
+                    Nome = row["Nome"]
+                };
+                pessoas.Add(tempPessoa);
+            }
+
+            return pessoas.FirstOrDefault();
+        }
+    }
+}
